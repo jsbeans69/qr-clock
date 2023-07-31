@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>qrclock-o</title>
+    <script src="file:///your path to your local version of qrcode.min.js"></script> <!--i have no clue how this is supposed to work on mobile or anywhere 
+  but i hope someone might find a way.
+-->
+
+</head>
+<body>
+    <h1>the time is roughly<button onclick="toggleFullscreen()">:</button></h1> <!--header with a semi hidden button that toggles fullscreen-->
+
+    <div id="qr-container"></div>
+ <script>
+        // JavaScript code for handling fullscreen and wake lock for android but i have no idea if it works or not
+        let wakeLock = null;
+
+        const toggleFullscreen = async () => {
+            const element = document.documentElement; // toggle fullscreen for the whole page
+            try {
+                if (document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled) {
+                    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement) {
+                        // Request fullscreen mode
+                        if (element.requestFullscreen) {
+                            await element.requestFullscreen();
+                        } else if (element.mozRequestFullScreen) { /* Firefox */
+                            await element.mozRequestFullScreen();
+                        } else if (element.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                            await element.webkitRequestFullscreen();
+                        }
+                    }
+                }
+
+                // Requests a wake lock to keep a device awake maybe
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (error) {
+                console.error('Error occurred:', error);
+            }
+        };
+
+        // Releases wake lock when exiting fullscreen supposedly
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement === null || document.webkitFullscreenElement === null || document.mozFullScreenElement === null) {
+                if (wakeLock !== null) {
+                    wakeLock.release().then(() => {
+                        wakeLock = null;
+                    });
+                }
+            }
+        });
+    </script>
+
+
+    <script>
+        // Function to generate QR code with given data
+        function generateQRCode(data) {
+            const container = document.getElementById('qr-container');
+            container.innerHTML = ''; // Clear previous QR code, if any
+
+            // Create a new QR code
+            const qr = new QRCode(container, {
+                text: data,
+                width: 128,
+                height: 128,
+            });
+        }
+
+        // Function to get the current time as text
+        function getCurrentTimeAsText() {
+            const now = new Date();
+            const timeText = now.toLocaleString(); // Adjust the format if needed
+            return timeText;
+        }
+
+        // Function to update the QR code every minute
+        function updateQRCode() {
+            const currentTime = getCurrentTimeAsText();
+            generateQRCode(currentTime);
+        }
+
+        // Call the updateQRCode function immediately on page load
+        updateQRCode();
+
+        // Update the QR code every minute (60,000 milliseconds)
+        setInterval(updateQRCode, 60000);
+    </script>
+</body>
+</html>
